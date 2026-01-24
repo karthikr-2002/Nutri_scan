@@ -37,3 +37,9 @@ Thumbs.db
 media/uploads/
 media/processed/
 media/reports/
+
+
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
