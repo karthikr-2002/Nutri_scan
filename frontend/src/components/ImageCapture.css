@@ -1,0 +1,305 @@
+.capture-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.capture-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.capture-card h2 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 2rem;
+}
+
+.instruction {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 1.1rem;
+}
+
+/* Preview Section */
+.preview-section {
+  position: relative;
+  margin: 30px 0;
+}
+
+.preview-image {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  display: block;
+  margin: 0 auto;
+}
+
+.btn-reset {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-reset:hover {
+  transform: scale(1.1);
+  background: #c82333;
+}
+
+/* Upload Options */
+.upload-options {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin: 30px 0;
+  flex-wrap: wrap;
+}
+
+.btn-camera, .btn-upload {
+  display: inline-block;
+  padding: 20px 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: none;
+}
+
+.btn-camera:hover, .btn-upload:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-analyze {
+  width: 100%;
+  max-width: 400px;
+  padding: 18px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 20px auto;
+  display: block;
+}
+
+.btn-analyze:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+}
+
+.btn-analyze:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error Message */
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+  border: 1px solid #f5c6cb;
+}
+
+/* Result Section */
+.result-section {
+  background: #d4edda;
+  border: 2px solid #28a745;
+  border-radius: 15px;
+  padding: 30px;
+  margin-top: 20px;
+}
+
+.result-section h3 {
+  color: #155724;
+  margin-bottom: 20px;
+}
+
+.result-details {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.result-details p {
+  margin: 10px 0;
+  color: #333;
+}
+
+.result-details strong {
+  color: #667eea;
+}
+
+.next-steps {
+  text-align: center;
+}
+
+.info-text {
+  color: #155724;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.btn-new-scan {
+  padding: 15px 40px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-new-scan:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+}
+
+/* Guidelines */
+.guidelines {
+  background: #e7f3ff;
+  border-left: 4px solid #667eea;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 30px;
+}
+
+.guidelines h4 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.guidelines ul {
+  list-style: none;
+  padding: 0;
+}
+
+.guidelines li {
+  padding: 8px 0;
+  color: #555;
+  font-size: 1rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .capture-card {
+    padding: 20px;
+  }
+
+  .capture-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .upload-options {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn-camera, .btn-upload {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .btn-reset {
+    right: 50%;
+    transform: translateX(50%);
+  }
+}
+/* Webcam Section */
+.webcam-section {
+  margin: 30px 0;
+  position: relative;
+}
+
+.webcam-video {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  display: block;
+  margin: 0 auto;
+  background: #000;
+}
+
+.webcam-controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn-webcam, .btn-capture, .btn-cancel {
+  padding: 15px 35px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-webcam {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-capture {
+  background: #28a745;
+  color: white;
+}
+
+.btn-cancel {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-webcam:hover, .btn-capture:hover, .btn-cancel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+/* Back Button */
+.btn-back {
+  background: transparent;
+  border: 2px solid #667eea;
+  color: #667eea;
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.btn-back:hover {
+  background: #667eea;
+  color: white;
+  transform: translateX(-3px);
+}

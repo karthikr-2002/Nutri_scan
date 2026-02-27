@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ImageCapture from './ImageCapture';
 import './Home.css';
 
 function Home() {
+  const [showCapture, setShowCapture] = useState(false);
+
+  if (showCapture) {
+  return <ImageCapture onBack={() => setShowCapture(false)} />;
+}
+
   return (
     <div className="home-container">
       <div className="hero-section">
@@ -12,7 +19,7 @@ function Home() {
         </p>
         
         <div className="cta-buttons">
-          <button className="btn-primary">
+          <button className="btn-primary" onClick={() => setShowCapture(true)}>
             📸 Start Scan
           </button>
           <button className="btn-secondary">
@@ -21,6 +28,7 @@ function Home() {
         </div>
       </div>
 
+      {/* Rest of the component stays the same */}
       <div className="features">
         <div className="feature-card">
           <span className="feature-icon">🩸</span>
