@@ -1,305 +1,207 @@
+/* ── ImageCapture CSS ─────────────────────────────────────────── */
 .capture-container {
-  max-width: 800px;
-  margin: 40px auto;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
 }
 
 .capture-card {
-  background: white;
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 28px;
+  padding: 36px;
+  width: 100%;
+  max-width: 520px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 32px 64px rgba(0,0,0,0.4);
 }
 
-.capture-card h2 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 2rem;
+.btn-back {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+.btn-back:hover { color: #94a3b8; }
 
-.instruction {
-  color: #666;
-  margin-bottom: 30px;
-  font-size: 1.1rem;
+.capture-header { text-align: center; margin-bottom: 28px; }
+.capture-header h2 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin-bottom: 8px;
 }
+.instruction { font-size: 14px; color: #64748b; }
 
-/* Preview Section */
-.preview-section {
-  position: relative;
-  margin: 30px 0;
+/* Webcam */
+.webcam-section {
+  text-align: center;
+  margin-bottom: 20px;
 }
+.webcam-video {
+  width: 100%;
+  border-radius: 16px;
+  border: 2px solid rgba(99,179,237,0.3);
+  background: #0f172a;
+}
+.webcam-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.btn-capture {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-capture:hover { transform: scale(1.05); }
+.btn-cancel {
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.3);
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-cancel:hover { background: rgba(239,68,68,0.25); }
 
+/* Preview */
+.preview-section { position: relative; text-align: center; margin-bottom: 20px; }
 .preview-image {
   width: 100%;
-  max-width: 500px;
-  height: auto;
-  border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-  display: block;
-  margin: 0 auto;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 2px solid rgba(99,179,237,0.3);
 }
-
 .btn-reset {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #dc3545;
+  background: rgba(0,0,0,0.6);
   color: white;
   border: none;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
+  font-size: 13px;
   cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.btn-reset:hover {
-  transform: scale(1.1);
-  background: #c82333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
 }
 
 /* Upload Options */
 .upload-options {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  margin: 30px 0;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
 }
-
-.btn-camera, .btn-upload {
-  display: inline-block;
-  padding: 20px 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 50px;
-  font-size: 1.2rem;
+.upload-option { display: flex; }
+.option-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 24px 16px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #e2e8f0;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: none;
+  transition: all 0.3s ease;
+  text-align: center;
+  text-decoration: none;
 }
-
-.btn-camera:hover, .btn-upload:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+.option-btn:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(99,179,237,0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  color: #e2e8f0;
 }
+.btn-icon { font-size: 30px; }
 
+/* Analyze Button */
 .btn-analyze {
   width: 100%;
-  max-width: 400px;
-  padding: 18px;
-  background: #28a745;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   color: white;
   border: none;
+  padding: 16px;
   border-radius: 50px;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  margin: 20px auto;
-  display: block;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 32px rgba(59,130,246,0.4);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
-
 .btn-analyze:hover:not(:disabled) {
-  background: #218838;
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 12px 40px rgba(59,130,246,0.5);
 }
+.btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-analyze:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Error Message */
+/* Error */
 .error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 15px;
-  border-radius: 10px;
-  margin: 20px 0;
-  border: 1px solid #f5c6cb;
-}
-
-/* Result Section */
-.result-section {
-  background: #d4edda;
-  border: 2px solid #28a745;
-  border-radius: 15px;
-  padding: 30px;
-  margin-top: 20px;
-}
-
-.result-section h3 {
-  color: #155724;
-  margin-bottom: 20px;
-}
-
-.result-details {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.result-details p {
-  margin: 10px 0;
-  color: #333;
-}
-
-.result-details strong {
-  color: #667eea;
-}
-
-.next-steps {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-top: 16px;
   text-align: center;
-}
-
-.info-text {
-  color: #155724;
-  font-size: 1.1rem;
-  margin-bottom: 20px;
-}
-
-.btn-new-scan {
-  padding: 15px 40px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-new-scan:hover {
-  background: #5568d3;
-  transform: translateY(-2px);
 }
 
 /* Guidelines */
 .guidelines {
-  background: #e7f3ff;
-  border-left: 4px solid #667eea;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
   padding: 20px;
-  border-radius: 10px;
-  margin-top: 30px;
 }
-
-.guidelines h4 {
-  color: #333;
-  margin-bottom: 15px;
-}
-
-.guidelines ul {
-  list-style: none;
-  padding: 0;
-}
-
-.guidelines li {
-  padding: 8px 0;
-  color: #555;
-  font-size: 1rem;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .capture-card {
-    padding: 20px;
-  }
-
-  .capture-card h2 {
-    font-size: 1.5rem;
-  }
-
-  .upload-options {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .btn-camera, .btn-upload {
-    width: 100%;
-    max-width: 300px;
-  }
-
-  .btn-reset {
-    right: 50%;
-    transform: translateX(50%);
-  }
-}
-/* Webcam Section */
-.webcam-section {
-  margin: 30px 0;
-  position: relative;
-}
-
-.webcam-video {
-  width: 100%;
-  max-width: 640px;
-  height: auto;
-  border-radius: 15px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
-  display: block;
-  margin: 0 auto;
-  background: #000;
-}
-
-.webcam-controls {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.btn-webcam, .btn-capture, .btn-cancel {
-  padding: 15px 35px;
-  border: none;
-  border-radius: 50px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-webcam {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.btn-capture {
-  background: #28a745;
-  color: white;
-}
-
-.btn-cancel {
-  background: #dc3545;
-  color: white;
-}
-
-.btn-webcam:hover, .btn-capture:hover, .btn-cancel:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-/* Back Button */
-.btn-back {
-  background: transparent;
-  border: 2px solid #667eea;
-  color: #667eea;
-  padding: 10px 25px;
-  border-radius: 25px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 20px;
-  display: inline-block;
-}
-
-.btn-back:hover {
-  background: #667eea;
-  color: white;
-  transform: translateX(-3px);
-}
+.guidelines h4 { font-size: 13px; font-weight: 700; color: #94a3b8; margin-bottom: 12px; }
+.guidelines ul { list-style: none; }
+.guidelines li { font-size: 12px; color: #64748b; margin-bottom: 6px; }
