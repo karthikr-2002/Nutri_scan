@@ -167,7 +167,7 @@ class ReportGenerator:
                 risk_ind = '🟢 Low'
 
             score_rows.append([
-                label.replace('🟡 ', '').replace('🍊 ', ''),
+                label.replace('🟡 ', '').replace('🩸 ', ''),
                 f'{vis_score}/10',
                 f'{comb_score}/10',
                 risk_ind
