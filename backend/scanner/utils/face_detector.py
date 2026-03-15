@@ -102,6 +102,14 @@ class FaceDetector:
             return {'face_detected': False, 'landmarks': None,
                     'image_shape': None, 'message': 'Could not read image'}
 
+        # Brightness check
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        mean_brightness = np.mean(gray)
+        if mean_brightness < 40:
+            return {'face_detected': False, 'landmarks': None,
+                    'image_shape': image.shape, 
+                    'message': 'Image is too dark. Please move to a well-lit area.'}
+
         if self._mode == 'tasks':
             return self._detect_tasks(image)
         elif self._mode == 'solutions':
@@ -156,6 +164,23 @@ class FaceDetector:
                 (int(lm.x * w), int(lm.y * h), lm.z)
                 for lm in result.face_landmarks[0]
             ]
+            
+            xs = [pt[0] for pt in landmarks]
+            ys = [pt[1] for pt in landmarks]
+            face_w = max(xs) - min(xs)
+            face_h = max(ys) - min(ys)
+            
+            if (face_w * face_h) / (w * h) < 0.04:
+                return {'face_detected': False, 'landmarks': None,
+                        'image_shape': image.shape,
+                        'message': 'Face is too distant. Please come closer.'}
+
+            completeness = self._check_face_completeness(landmarks, image.shape)
+            if completeness:
+                return {'face_detected': False, 'landmarks': None,
+                        'image_shape': image.shape,
+                        'message': completeness}
+
             return {'face_detected': True, 'landmarks': landmarks,
                     'image_shape': image.shape,
                     'message': f'Face detected — MediaPipe FaceLandmarker ({len(landmarks)} landmarks)'}
@@ -179,6 +204,23 @@ class FaceDetector:
                 (int(lm.x * w), int(lm.y * h), lm.z)
                 for lm in results.multi_face_landmarks[0].landmark
             ]
+            
+            xs = [pt[0] for pt in landmarks]
+            ys = [pt[1] for pt in landmarks]
+            face_w = max(xs) - min(xs)
+            face_h = max(ys) - min(ys)
+            
+            if (face_w * face_h) / (w * h) < 0.04:
+                return {'face_detected': False, 'landmarks': None,
+                        'image_shape': image.shape,
+                        'message': 'Face is too distant. Please come closer.'}
+
+            completeness = self._check_face_completeness(landmarks, image.shape)
+            if completeness:
+                return {'face_detected': False, 'landmarks': None,
+                        'image_shape': image.shape,
+                        'message': completeness}
+
             return {'face_detected': True, 'landmarks': landmarks,
                     'image_shape': image.shape,
                     'message': f'Face detected — MediaPipe FaceMesh ({len(landmarks)} landmarks)'}
@@ -197,10 +239,63 @@ class FaceDetector:
             return {'face_detected': False, 'landmarks': None,
                     'image_shape': image.shape,
                     'message': 'No face detected (OpenCV Haar Cascade)'}
-        x, y, w, h = faces[0]
-        return {'face_detected': True, 'landmarks': {'bbox': (x, y, w, h)},
+        x, y, fw, fh = faces[0]
+        h, w = image.shape[:2]
+        
+        if (fw * fh) / (w * h) < 0.04:
+            return {'face_detected': False, 'landmarks': None,
+                    'image_shape': image.shape,
+                    'message': 'Face is too distant. Please come closer.'}
+
+        return {'face_detected': True, 'landmarks': {'bbox': (x, y, fw, fh)},
                 'image_shape': image.shape,
                 'message': 'Face detected — OpenCV Haar Cascade (proportional ROIs)'}
+
+    # ── Face Completeness Check ───────────────────────────────────────────────
+
+    def _check_face_completeness(self, landmarks, image_shape):
+        """
+        Checks whether the key face zones are visible in the image.
+
+        Required zones:
+          - Forehead   : landmark 10
+          - Lower lip  : landmark 17  (allows forehead-to-under-lips crop)
+          - Left temple: landmark 127
+          - Right temple: landmark 356
+
+        Returns an error message string if incomplete, or None if OK.
+        """
+        ih, iw = image_shape[:2]
+        margin = 5  # pixels from edge that counts as "out of frame"
+
+        # Key landmark indices
+        KEY_FOREHEAD     = 10
+        KEY_LOWER_LIP    = 17
+        KEY_LEFT_TEMPLE  = 127
+        KEY_RIGHT_TEMPLE = 356
+
+        if len(landmarks) <= max(KEY_FOREHEAD, KEY_LOWER_LIP, KEY_LEFT_TEMPLE, KEY_RIGHT_TEMPLE):
+            return None  # Not enough landmarks — skip check
+
+        def in_frame(idx, axis):
+            """Check if landmark[idx] is within image bounds on the given axis."""
+            coord = landmarks[idx][axis]  # 0=x, 1=y
+            limit = iw if axis == 0 else ih
+            return margin < coord < (limit - margin)
+
+        forehead_ok      = in_frame(KEY_FOREHEAD,     1)  # y axis
+        lower_lip_ok     = in_frame(KEY_LOWER_LIP,    1)  # y axis
+        left_temple_ok   = in_frame(KEY_LEFT_TEMPLE,  0)  # x axis
+        right_temple_ok  = in_frame(KEY_RIGHT_TEMPLE, 0)  # x axis
+
+        if not forehead_ok:
+            return 'Partial face detected: forehead is cut off. Please move down a bit.'
+        if not lower_lip_ok:
+            return 'Partial face detected: chin/lips are cut off. Please show your full face.'
+        if not left_temple_ok or not right_temple_ok:
+            return 'Partial face detected: face is cut off on the side. Please center your face.'
+
+        return None  # All good
 
     # ── ROI Extraction ────────────────────────────────────────────────────────
 

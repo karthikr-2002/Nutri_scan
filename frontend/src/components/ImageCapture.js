@@ -110,6 +110,17 @@ function ImageCapture({ onBack, onScanComplete }) {
       const response = await axios.post(`${API_URL}/api/upload/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      
+      if (!response.data.face_detected) {
+        const msg = response.data.face_detection_message || '';
+        if (msg.includes('distant') || msg.includes('closer') || msg.includes('dark') || msg.includes('Partial') || msg.includes('partial')) {
+          setError('⚠️ ' + msg);
+        } else {
+          setError('⚠️ No face detected. Please ensure your face is clearly visible, well-lit, and front-facing.');
+        }
+        return;
+      }
+      
       // Pass full session data (including chatbot_questions) to parent
       onScanComplete(response.data);
     } catch (err) {
