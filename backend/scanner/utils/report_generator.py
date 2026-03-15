@@ -23,25 +23,14 @@ class ReportGenerator:
         'RED': colors.HexColor('#ef4444'),
     }
 
+    # ✅ Removed anemia & dehydration
     CONDITION_LABELS = {
-        'anemia': '🩸 Anemia (Iron Deficiency)',
         'jaundice': '🟡 Jaundice',
-        'dehydration': '💧 Dehydration',
-        'vitamin': '🍊 Vitamin Deficiency',
+        'anemia': '🩸 Anemia',
     }
 
     def generate_pdf(self, session_data, risk_data, recommendations):
-        """
-        Generate a PDF report as bytes.
 
-        Args:
-            session_data: dict with session_id, created_at, visual_analysis, combined_scores
-            risk_data: dict from RiskAssessor.calculate_final_risk()
-            recommendations: dict from RiskAssessor.get_recommendations()
-
-        Returns:
-            bytes: PDF file content
-        """
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -55,7 +44,7 @@ class ReportGenerator:
         styles = getSampleStyleSheet()
         story = []
 
-        # Custom styles
+        # ── Styles ───────────────────────────────
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Title'],
@@ -79,7 +68,6 @@ class ReportGenerator:
             textColor=colors.HexColor('#0f172a'),
             spaceBefore=12,
             spaceAfter=6,
-            borderPad=4,
         )
         body_style = ParagraphStyle(
             'Body',
@@ -98,13 +86,13 @@ class ReportGenerator:
             spaceAfter=3,
         )
 
-        # ── Header ──────────────────────────────────────────────────────────
+        # ── Header ───────────────────────────────
         story.append(Paragraph('🩺 NUTRI-SCAN', title_style))
         story.append(Paragraph('AI-Powered Nutritional Health Screening Report', subtitle_style))
         story.append(HRFlowable(width='100%', thickness=2, color=colors.HexColor('#e2e8f0')))
         story.append(Spacer(1, 6 * mm))
 
-        # ── Session Info ─────────────────────────────────────────────────────
+        # ── Session Info ─────────────────────────
         scan_date = session_data.get('created_at', datetime.now().strftime('%Y-%m-%d %H:%M'))
         if hasattr(scan_date, 'strftime'):
             scan_date = scan_date.strftime('%d %B %Y, %H:%M')
@@ -117,6 +105,7 @@ class ReportGenerator:
             ['Session ID:', session_id],
             ['Scan Type:', 'Facial Visual Analysis + Symptom Assessment'],
         ]
+
         info_table = Table(info_data, colWidths=[55 * mm, 110 * mm])
         info_table.setStyle(TableStyle([
             ('FONTSIZE', (0, 0), (-1, -1), 10),
@@ -130,7 +119,7 @@ class ReportGenerator:
         story.append(info_table)
         story.append(Spacer(1, 8 * mm))
 
-        # ── Risk Level ───────────────────────────────────────────────────────
+        # ── Risk Level ───────────────────────────
         story.append(Paragraph('OVERALL RISK ASSESSMENT', section_header_style))
 
         risk_level = risk_data.get('risk_level', 'GREEN')
@@ -152,31 +141,37 @@ class ReportGenerator:
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('TOPPADDING', (0, 0), (-1, -1), 10),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
-            ('ROUNDEDCORNERS', [6]),
         ]))
         story.append(risk_table)
         story.append(Spacer(1, 4 * mm))
         story.append(Paragraph(risk_desc, body_style))
         story.append(Spacer(1, 6 * mm))
 
-        # ── Condition Scores ─────────────────────────────────────────────────
+        # ── Condition Scores ─────────────────────
         story.append(Paragraph('VISUAL ANALYSIS SCORES', section_header_style))
 
         visual = session_data.get('visual_analysis', {})
         combined = session_data.get('combined_scores', visual)
 
         score_rows = [['Condition', 'Visual Score', 'Combined Score', 'Risk']]
+
         for condition, label in self.CONDITION_LABELS.items():
             vis_score = visual.get(f'{condition}_score', visual.get(condition, 0))
             comb_score = combined.get(condition, vis_score)
+
             if comb_score >= 5:
                 risk_ind = '🔴 High'
             elif comb_score >= 3:
                 risk_ind = '🟡 Moderate'
             else:
                 risk_ind = '🟢 Low'
-            score_rows.append([label.replace('🩸 ', '').replace('🟡 ', '').replace('💧 ', '').replace('🍊 ', ''),
-                                f'{vis_score}/10', f'{comb_score}/10', risk_ind])
+
+            score_rows.append([
+                label.replace('🟡 ', '').replace('🍊 ', ''),
+                f'{vis_score}/10',
+                f'{comb_score}/10',
+                risk_ind
+            ])
 
         score_table = Table(score_rows, colWidths=[70 * mm, 35 * mm, 40 * mm, 25 * mm])
         score_table.setStyle(TableStyle([
@@ -187,13 +182,11 @@ class ReportGenerator:
             ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#f8fafc'), colors.white]),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
         ]))
         story.append(score_table)
         story.append(Spacer(1, 6 * mm))
 
-        # ── Detected Conditions ───────────────────────────────────────────────
+        # ── Detected Conditions ──────────────────
         detected = risk_data.get('detected_conditions', [])
         if detected:
             story.append(Paragraph('DETECTED INDICATORS', section_header_style))
@@ -201,13 +194,13 @@ class ReportGenerator:
                 story.append(Paragraph(f'• {cond}', bullet_style))
             story.append(Spacer(1, 4 * mm))
 
-        # ── Recommendations ──────────────────────────────────────────────────
+        # ── Recommendations ──────────────────────
         story.append(Paragraph('PERSONALIZED RECOMMENDATIONS', section_header_style))
 
+        # ✅ Removed hydration section
         rec_sections = [
             ('🥗 Dietary Recommendations', recommendations.get('dietary', [])),
             ('🏃 Lifestyle Recommendations', recommendations.get('lifestyle', [])),
-            ('💧 Hydration Guidance', recommendations.get('hydration', [])),
             ('🏥 Medical Advisory', recommendations.get('medical', [])),
         ]
 
@@ -229,7 +222,7 @@ class ReportGenerator:
         story.append(HRFlowable(width='100%', thickness=1, color=colors.HexColor('#e2e8f0')))
         story.append(Spacer(1, 4 * mm))
 
-        # ── Disclaimer ───────────────────────────────────────────────────────
+        # ── Disclaimer ───────────────────────────
         disclaimer_style = ParagraphStyle(
             'Disclaimer',
             parent=styles['Normal'],
@@ -238,6 +231,7 @@ class ReportGenerator:
             alignment=TA_CENTER,
             leading=12,
         )
+
         story.append(Paragraph(
             '⚠️ DISCLAIMER: This report is generated by an AI screening tool for preliminary assessment purposes only. '
             'It is NOT a medical diagnosis. Always consult a qualified healthcare professional for medical advice, '

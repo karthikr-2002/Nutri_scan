@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import HttpResponse
+
 from .models import ScanSession
 from .serializers import ScanSessionSerializer
 from .utils.face_detector import FaceDetector
@@ -11,11 +12,17 @@ from .utils.risk_assessor import RiskAssessor
 from .utils.report_generator import ReportGenerator
 
 
+# ============================================================
+# IMAGE UPLOAD + VISUAL ANALYSIS
+# ============================================================
+
 @api_view(['POST'])
 def upload_image(request):
     """
-    Upload image, detect face, perform visual analysis, and return scan session.
+    Upload image, detect face, perform visual analysis,
+    and return scan session with conditional chatbot questions.
     """
+
     if 'image' not in request.FILES:
         return Response(
             {'error': 'No image provided'},
@@ -43,151 +50,109 @@ def upload_image(request):
     scan_session.face_detected = face_result['face_detected']
 
     visual_analysis = {
-        'anemia_score': 0,
         'jaundice_score': 0,
-        'dehydration_score': 0,
-        'vitamin_score': 0
+        'anemia_score': 0,
     }
 
+    # ========================================================
+    # IF FACE DETECTED → RUN ANALYSIS
+    # ========================================================
     if face_result['face_detected']:
-        landmarks = face_result['landmarks']
-        analysis_results = {}
 
-        # ===============================
+        landmarks = face_result['landmarks']
+
+        # -----------------------------
         # Forehead Baseline Extraction
-        # ===============================
+        # -----------------------------
         forehead_roi = face_detector.extract_roi(image_path, landmarks, 'forehead')
         forehead_color = None
+
         if forehead_roi is not None:
             forehead_color = feature_analyzer.analyze_color(forehead_roi)
 
-        # ===============================
-        # EYES (Anemia + Jaundice)
-        # ===============================
-        left_eye_roi = face_detector.extract_roi(image_path, landmarks, 'left_eye')
-        right_eye_roi = face_detector.extract_roi(image_path, landmarks, 'right_eye')
-
-        eye_pallor_score = 0
-        eye_yellow_score = 0
-
-        for eye_roi in [left_eye_roi, right_eye_roi]:
-            if eye_roi is not None:
-                eye_color = feature_analyzer.analyze_color(eye_roi)
-                if eye_color:
-                    eye_pallor_score = max(
-                        eye_pallor_score,
-                        feature_analyzer.check_pallor(
-                            eye_color,
-                            baseline_data=forehead_color
-                        )
-                    )
-                    eye_yellow_score = max(
-                        eye_yellow_score,
-                        feature_analyzer.check_yellowness(
-                            eye_color,
-                            baseline_data=forehead_color
-                        )
-                    )
-
-        analysis_results['eyes'] = {
-            'pallor_score': eye_pallor_score,
-            'yellow_score': eye_yellow_score,
-        }
-
-        # ===============================
-        # LIPS (Anemia + Dehydration + Vitamin)
-        # ===============================
-        upper_lip_roi = face_detector.extract_roi(image_path, landmarks, 'upper_lip')
-        lower_lip_roi = face_detector.extract_roi(image_path, landmarks, 'lower_lip')
-
-        lip_pallor_score = 0
-        lip_dryness_score = 0
-        best_lip_color = None
-        best_lip_texture = None
-
-        for lip_roi in [upper_lip_roi, lower_lip_roi]:
-            if lip_roi is not None:
-                lip_color = feature_analyzer.analyze_color(lip_roi)
-                lip_texture = feature_analyzer.analyze_texture(lip_roi)
-
-                if lip_color:
-                    score = feature_analyzer.check_pallor(
-                        lip_color,
-                        baseline_data=forehead_color
-                    )
-                    if score > lip_pallor_score:
-                        lip_pallor_score = score
-                        best_lip_color = lip_color
-
-                if lip_texture:
-                    score = feature_analyzer.check_dryness(lip_texture)
-                    if score > lip_dryness_score:
-                        lip_dryness_score = score
-                        best_lip_texture = lip_texture
-
-        analysis_results['lips'] = {
-            'pallor_score': lip_pallor_score,
-            'dryness_score': lip_dryness_score,
-        }
-
-        # ===============================
-        # CHEEKS (Jaundice)
-        # ===============================
+        # -----------------------------
+        # Cheeks → Jaundice Detection
+        # -----------------------------
         cheek_yellow_score = 0
+
         for cheek in ['left_cheek', 'right_cheek']:
             cheek_roi = face_detector.extract_roi(image_path, landmarks, cheek)
+
             if cheek_roi is not None:
                 cheek_color = feature_analyzer.analyze_color(cheek_roi)
+
                 if cheek_color:
+                    # check_jaundice(sclera_color, skin_color) — uses cheek as
+                    # primary colour and forehead as the baseline skin reference
                     cheek_yellow_score = max(
                         cheek_yellow_score,
-                        feature_analyzer.check_yellowness(
+                        feature_analyzer.check_jaundice(
                             cheek_color,
-                            baseline_data=forehead_color
+                            forehead_color or cheek_color
                         )
                     )
 
-        # ===============================
-        # FINAL CONDITION SCORES
-        # ===============================
-
-        visual_analysis['anemia_score'] = round(
-            analysis_results['eyes']['pallor_score'] * 0.4 +
-            analysis_results['lips']['pallor_score'] * 0.6,
-            1
-        )
-
         visual_analysis['jaundice_score'] = round(
-            analysis_results['eyes']['yellow_score'] * 0.6 +
             cheek_yellow_score * 0.4,
             1
         )
+        # -----------------------------
+        # Lips → Anemia Support
+        # -----------------------------
+        best_lip_color = None
 
-        visual_analysis['dehydration_score'] = round(
-            analysis_results['lips']['dryness_score'] * 0.8,
-            1
+        for lip_region in ['upper_lip', 'lower_lip']:
+            lip_roi = face_detector.extract_roi(image_path, landmarks, lip_region)
+            if lip_roi is not None:
+                lip_color = feature_analyzer.analyze_color(lip_roi)
+                if lip_color:
+                    # Capture the first valid lip color for Anemia check
+                    best_lip_color = lip_color
+                    break
+
+        # -----------------------------
+        # Under-Eyes + Lips → Anemia Detection
+        # -----------------------------
+        best_under_eye_color = None
+
+        for eye_region in ['left_under_eye', 'right_under_eye']:
+            eye_roi = face_detector.extract_roi(image_path, landmarks, eye_region)
+            if eye_roi is not None:
+                eye_color = feature_analyzer.analyze_color(eye_roi)
+                if eye_color:
+                    if best_under_eye_color is None:
+                        best_under_eye_color = eye_color
+                    else:
+                        # Pick the darker of the two sides (stronger anemia signal)
+                        if eye_color['lab']['l'] < best_under_eye_color['lab']['l']:
+                            best_under_eye_color = eye_color
+
+        anemia_score = feature_analyzer.check_anemia(
+            lip_color=best_lip_color,
+            under_eye_color=best_under_eye_color,
+            baseline_color=forehead_color
         )
+        visual_analysis['anemia_score'] = round(anemia_score, 1)
 
-        # Vitamin deficiency (NEW — proper method)
-        vitamin_score = 0
-        if best_lip_color and best_lip_texture:
-            vitamin_score = feature_analyzer.check_vitamin_deficiency(
-                best_lip_color,
-                best_lip_texture,
-                baseline_data=forehead_color
-            )
-
-        visual_analysis['vitamin_score'] = round(vitamin_score, 1)
-
-        scan_session.visual_analysis = visual_analysis
-
+    # Save visual analysis
+    scan_session.visual_analysis = visual_analysis
     scan_session.save()
 
-    # ===============================
-    # Chatbot Questions
-    # ===============================
+    # ========================================================
+    # THRESHOLD-BASED CHATBOT TRIGGER
+    # ========================================================
     chatbot_engine = ChatbotEngine()
-    questions = chatbot_engine.get_questions(visual_analysis)
+
+    THRESHOLD = 2
+    trigger_conditions = []
+
+    if visual_analysis.get('jaundice_score', 0) > THRESHOLD:
+        trigger_conditions.append('jaundice')
+
+    if visual_analysis.get('anemia_score', 0) > THRESHOLD:
+        trigger_conditions.append('anemia')
+
+    questions = chatbot_engine.get_questions(trigger_conditions)
 
     serializer = ScanSessionSerializer(scan_session)
     response_data = serializer.data
@@ -196,6 +161,10 @@ def upload_image(request):
 
     return Response(response_data, status=status.HTTP_201_CREATED)
 
+
+# ============================================================
+# SUBMIT CHATBOT ANSWERS
+# ============================================================
 
 @api_view(['POST'])
 def submit_chatbot(request):
@@ -217,17 +186,18 @@ def submit_chatbot(request):
         )
 
     visual_analysis = scan_session.visual_analysis or {
-        'anemia_score': 0,
         'jaundice_score': 0,
-        'dehydration_score': 0,
-        'vitamin_score': 0
+        'anemia_score': 0
     }
 
     chatbot_engine = ChatbotEngine()
     evaluation = chatbot_engine.evaluate_answers(visual_analysis, answers)
 
     risk_assessor = RiskAssessor()
-    risk_data = risk_assessor.calculate_final_risk(evaluation['combined_scores'])
+    risk_data = risk_assessor.calculate_final_risk(
+        evaluation['combined_scores']
+    )
+
     recommendations = risk_assessor.get_recommendations(
         evaluation['combined_scores'],
         risk_data['risk_level']
@@ -241,6 +211,7 @@ def submit_chatbot(request):
         **visual_analysis,
         'combined_scores': evaluation['combined_scores'],
     }
+
     scan_session.save()
 
     return Response({
@@ -251,8 +222,13 @@ def submit_chatbot(request):
     })
 
 
+# ============================================================
+# PDF REPORT GENERATION
+# ============================================================
+
 @api_view(['GET'])
 def get_report(request, session_id):
+
     try:
         scan_session = ScanSession.objects.get(session_id=session_id)
     except ScanSession.DoesNotExist:
@@ -263,20 +239,20 @@ def get_report(request, session_id):
 
     if not scan_session.final_risk_level:
         return Response(
-            {'error': 'Scan analysis not complete. Please complete the chatbot first.'},
+            {'error': 'Scan analysis not complete. Please complete chatbot first.'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
     visual_analysis = scan_session.visual_analysis or {}
+
     combined_scores = visual_analysis.pop('combined_scores', {
-        'anemia': visual_analysis.get('anemia_score', 0),
         'jaundice': visual_analysis.get('jaundice_score', 0),
-        'dehydration': visual_analysis.get('dehydration_score', 0),
-        'vitamin': visual_analysis.get('vitamin_score', 0),
+        'anemia': visual_analysis.get('anemia_score', 0),
     })
 
     risk_assessor = RiskAssessor()
     risk_data = risk_assessor.calculate_final_risk(combined_scores)
+
     recommendations = risk_assessor.get_recommendations(
         combined_scores,
         risk_data['risk_level']
@@ -290,13 +266,24 @@ def get_report(request, session_id):
     }
 
     generator = ReportGenerator()
-    pdf_bytes = generator.generate_pdf(session_data, risk_data, recommendations)
+    pdf_bytes = generator.generate_pdf(
+        session_data,
+        risk_data,
+        recommendations
+    )
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="nutriscan-report-{str(scan_session.session_id)[:8]}.pdf"'
+    response['Content-Disposition'] = (
+        f'attachment; filename="nutriscan-report-{str(scan_session.session_id)[:8]}.pdf"'
+    )
     response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+
     return response
 
+
+# ============================================================
+# GET SCAN DETAILS
+# ============================================================
 
 @api_view(['GET'])
 def get_scan(request, session_id):
@@ -311,9 +298,13 @@ def get_scan(request, session_id):
         )
 
 
+# ============================================================
+# API TEST
+# ============================================================
+
 @api_view(['GET'])
 def test_api(request):
     return Response({
         'message': 'Nutri-Scan API is working!',
-        'version': '3.0 (Fully Wired)',
+        'version': '3.1 (Threshold-Based Chatbot Enabled)',
     })

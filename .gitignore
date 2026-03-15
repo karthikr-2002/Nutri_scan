@@ -34,9 +34,9 @@ Thumbs.db
 *.env
 
 # Uploads and processed files
-media/uploads/
 media/processed/
 media/reports/
+backend/media/
 
 
 frontend/node_modules/

@@ -24,10 +24,8 @@ class ScanSession(models.Model):
     # Visual analysis results (stored as JSON)
     visual_analysis = models.JSONField(null=True, blank=True)
     # Example: {
-    #   "anemia_score": 6,
     #   "jaundice_score": 2,
-    #   "dehydration_score": 4,
-    #   "vitamin_score": 3
+    #   "anemia_score": 3
     # }
     
     # Chatbot responses

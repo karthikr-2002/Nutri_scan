@@ -11,7 +11,7 @@ const RISK_CONFIG = {
     border: '#86efac',
     emoji: '🟢',
     label: 'Low Risk',
-    message: 'Great! No significant nutritional deficiency indicators detected.',
+    message: 'Great! No significant indicators detected.',
   },
   YELLOW: {
     color: '#f59e0b',
@@ -31,11 +31,10 @@ const RISK_CONFIG = {
   },
 };
 
-
-
 function ScoreBar({ label, icon, score, maxScore = 10 }) {
   const pct = Math.round((score / maxScore) * 100);
   const color = score >= 5 ? '#ef4444' : score >= 3 ? '#f59e0b' : '#22c55e';
+
   return (
     <div className="score-bar-item">
       <div className="score-bar-label">
@@ -72,10 +71,14 @@ function Results({ sessionData, riskData, onNewScan }) {
         `${API_URL}/api/report/${sessionData.session_id}/`,
         { responseType: 'blob' }
       );
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `nutriscan-report-${sessionData.session_id.slice(0, 8)}.pdf`);
+      link.setAttribute(
+        'download',
+        `nutriscan-report-${sessionData.session_id.slice(0, 8)}.pdf`
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -93,7 +96,9 @@ function Results({ sessionData, riskData, onNewScan }) {
         {/* Header */}
         <div className="results-header">
           <h2>🩺 Health Assessment Results</h2>
-          <p className="results-subtitle">Based on facial analysis and your symptom responses</p>
+          <p className="results-subtitle">
+            Based on facial analysis and your symptom responses
+          </p>
         </div>
 
         {/* Risk Level Banner */}
@@ -106,7 +111,10 @@ function Results({ sessionData, riskData, onNewScan }) {
             <h3 style={{ color: config.color }}>{config.label}</h3>
             <p>{risk.risk_description || config.message}</p>
             <div className="risk-score">
-              Overall Score: <strong style={{ color: config.color }}>{risk.overall_score || 0}/10</strong>
+              Overall Score:{' '}
+              <strong style={{ color: config.color }}>
+                {risk.overall_score || 0}/10
+              </strong>
             </div>
           </div>
         </div>
@@ -127,10 +135,16 @@ function Results({ sessionData, riskData, onNewScan }) {
         <div className="scores-section">
           <h4>📊 Condition Analysis</h4>
           <div className="scores-grid">
-            <ScoreBar label="Anemia" icon="🩸" score={combined.anemia || 0} />
-            <ScoreBar label="Jaundice" icon="🟡" score={combined.jaundice || 0} />
-            <ScoreBar label="Dehydration" icon="💧" score={combined.dehydration || 0} />
-            <ScoreBar label="Vitamins" icon="🍊" score={combined.vitamin || 0} />
+            <ScoreBar
+              label="Jaundice"
+              icon="🟡"
+              score={combined.jaundice || 0}
+            />
+            <ScoreBar
+              label="Anemia"
+              icon="🩸"
+              score={combined.anemia || 0}
+            />
           </div>
         </div>
 
@@ -142,16 +156,9 @@ function Results({ sessionData, riskData, onNewScan }) {
             <div className="rec-group">
               <h5>🥗 Dietary</h5>
               <ul>
-                {recommendations.dietary.map((r, i) => <li key={i}>{r}</li>)}
-              </ul>
-            </div>
-          )}
-
-          {recommendations.hydration?.length > 0 && (
-            <div className="rec-group">
-              <h5>💧 Hydration</h5>
-              <ul>
-                {recommendations.hydration.map((r, i) => <li key={i}>{r}</li>)}
+                {recommendations.dietary.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
               </ul>
             </div>
           )}
@@ -160,16 +167,24 @@ function Results({ sessionData, riskData, onNewScan }) {
             <div className="rec-group">
               <h5>🏃 Lifestyle</h5>
               <ul>
-                {recommendations.lifestyle.map((r, i) => <li key={i}>{r}</li>)}
+                {recommendations.lifestyle.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
               </ul>
             </div>
           )}
 
           {recommendations.medical?.length > 0 && (
-            <div className={`rec-group ${riskLevel === 'RED' ? 'rec-urgent' : ''}`}>
+            <div
+              className={`rec-group ${
+                riskLevel === 'RED' ? 'rec-urgent' : ''
+              }`}
+            >
               <h5>🏥 Medical Advisory</h5>
               <ul>
-                {recommendations.medical.map((r, i) => <li key={i}>{r}</li>)}
+                {recommendations.medical.map((r, i) => (
+                  <li key={i}>{r}</li>
+                ))}
               </ul>
             </div>
           )}
@@ -177,8 +192,9 @@ function Results({ sessionData, riskData, onNewScan }) {
 
         {/* Disclaimer */}
         <div className="disclaimer-box">
-          ⚠️ <strong>Disclaimer:</strong> This is a preliminary screening tool, not a medical diagnosis.
-          Always consult a qualified healthcare professional for medical advice.
+          ⚠️ <strong>Disclaimer:</strong> This is a preliminary screening tool,
+          not a medical diagnosis. Always consult a qualified healthcare
+          professional for medical advice.
         </div>
 
         {/* Action Buttons */}
@@ -190,12 +206,15 @@ function Results({ sessionData, riskData, onNewScan }) {
           >
             {downloading ? '⏳ Generating...' : '📄 Download PDF Report'}
           </button>
+
           <button onClick={onNewScan} className="btn-new-scan">
             🔄 New Scan
           </button>
         </div>
 
-        {downloadError && <div className="error-message">⚠️ {downloadError}</div>}
+        {downloadError && (
+          <div className="error-message">⚠️ {downloadError}</div>
+        )}
       </div>
     </div>
   );

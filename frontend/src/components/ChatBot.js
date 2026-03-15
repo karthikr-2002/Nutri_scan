@@ -18,10 +18,8 @@ function ChatBot({ sessionData, onBack, onComplete }) {
       const qs = sessionData.chatbot_questions || [];
       setQuestions(qs);
       setVisualScores({
-        anemia: sessionData.visual_analysis?.anemia_score || 0,
         jaundice: sessionData.visual_analysis?.jaundice_score || 0,
-        dehydration: sessionData.visual_analysis?.dehydration_score || 0,
-        vitamin: sessionData.visual_analysis?.vitamin_score || 0,
+        anemia: sessionData.visual_analysis?.anemia_score || 0,
       });
     }
   }, [sessionData]);
@@ -101,9 +99,35 @@ function ChatBot({ sessionData, onBack, onComplete }) {
     return (
       <div className="chatbot-container">
         <div className="chatbot-card">
-          <p>No questions loaded. Please go back and try again.</p>
-          <button onClick={onBack} className="btn-back">
-            ← Back
+          <div className="chatbot-header">
+            <button onClick={onBack} className="btn-back">
+              ← Back
+            </button>
+            <div className="chatbot-title">
+              <span className="chatbot-avatar">🤖</span>
+              <div>
+                <h3>NutriBot</h3>
+                <p className="chatbot-subtitle">
+                  Health Assessment Assistant
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="scan-summary" style={{ marginBottom: '24px' }}>
+            <p className="scan-summary-label">📊 Visual Scan Results</p>
+            <div className="scores-row">
+              {conditionBadge('Jaundice', visualScores.jaundice)}
+              {conditionBadge('Anemia', visualScores.anemia)}
+            </div>
+          </div>
+
+          <p style={{ color: '#e2e8f0', textAlign: 'center', marginBottom: '30px', lineHeight: '1.6' }}>
+            Good news! Based on your visual scan, no high-risk indicators were detected. No additional assessment questions are necessary.
+          </p>
+
+          <button onClick={() => handleSubmit({})} className="btn-next active">
+            🔍 Get Final Results
           </button>
         </div>
       </div>
@@ -133,10 +157,8 @@ function ChatBot({ sessionData, onBack, onComplete }) {
         <div className="scan-summary">
           <p className="scan-summary-label">📊 Visual Scan Results</p>
           <div className="scores-row">
-            {conditionBadge('Anemia', visualScores.anemia)}
             {conditionBadge('Jaundice', visualScores.jaundice)}
-            {conditionBadge('Dehydration', visualScores.dehydration)}
-            {conditionBadge('Vitamins', visualScores.vitamin)}
+            {conditionBadge('Anemia', visualScores.anemia)}
           </div>
         </div>
 

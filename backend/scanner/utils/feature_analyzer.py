@@ -4,11 +4,9 @@ import numpy as np
 
 class FeatureAnalyzer:
     """
-    Analyze facial features for health indicators:
-    - Anemia (Pallor)
+    Analyze facial features for:
     - Jaundice (Yellowness)
-    - Dehydration (Dryness)
-    - Vitamin Deficiency
+    - Vitamin Deficiency (B-complex related signs)
     """
 
     # ==========================================
@@ -20,19 +18,15 @@ class FeatureAnalyzer:
             return None
 
         try:
-            # --- Convert to LAB for lighting normalization ---
             lab = cv2.cvtColor(roi_image, cv2.COLOR_BGR2LAB)
             l, a, b = cv2.split(lab)
 
-            # Equalize brightness channel
+            # Lighting normalization
             l = cv2.equalizeHist(l)
-
             lab = cv2.merge([l, a, b])
 
-            # Convert normalized LAB back to BGR
             normalized_bgr = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-            # Convert normalized image to RGB & HSV
             rgb = cv2.cvtColor(normalized_bgr, cv2.COLOR_BGR2RGB)
             hsv = cv2.cvtColor(normalized_bgr, cv2.COLOR_BGR2HSV)
 
@@ -47,7 +41,7 @@ class FeatureAnalyzer:
                     "blue": float(mean_rgb[2])
                 },
                 "hsv": {
-                    "hue": float(mean_hsv[0]),       # OpenCV range: 0–179
+                    "hue": float(mean_hsv[0]),
                     "saturation": float(mean_hsv[1]),
                     "value": float(mean_hsv[2])
                 },
@@ -59,175 +53,125 @@ class FeatureAnalyzer:
             }
 
         except Exception as e:
-            print(f"Error analyzing color: {e}")
+            print(f"Color analysis error: {e}")
             return None
 
 
     # ==========================================
-    # TEXTURE ANALYSIS
+    # JAUNDICE DETECTION
     # ==========================================
-    def analyze_texture(self, roi_image):
+    def check_jaundice(self, sclera_color, skin_color=None):
+        """
+        Detection based exclusively on eye sclera yellowing.
+        Skin tone is NOT used — it varies too much by ethnicity and lighting.
+        """
 
-        if roi_image is None or roi_image.size == 0:
-            return None
-
-        try:
-            gray = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY)
-
-            # Edge density (cracks)
-            edges = cv2.Canny(gray, 50, 150)
-            edge_density = np.sum(edges > 0) / edges.size
-
-            # Roughness (pixel variation)
-            roughness = float(np.std(gray))
-
-            # Entropy (texture randomness)
-            hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-            hist_norm = hist / (hist.sum() + 1e-6)
-            entropy = -np.sum(hist_norm * np.log2(hist_norm + 1e-6))
-
-            return {
-                "edge_density": float(edge_density),
-                "roughness": roughness,
-                "entropy": float(entropy)
-            }
-
-        except Exception as e:
-            print(f"Error analyzing texture: {e}")
-            return None
-
-
-    # ==========================================
-    # ANEMIA (PALLOR)
-    # ==========================================
-    def check_pallor(self, color_data, baseline_data=None):
-
-        if not color_data:
+        if not sclera_color:
             return 0
 
         score = 0
-        red = color_data["rgb"]["red"]
-        sat = color_data["hsv"]["saturation"]
 
-        if baseline_data:
-            base_red = baseline_data["rgb"]["red"]
-            base_sat = baseline_data["hsv"]["saturation"]
+        sclera_hue = sclera_color["hsv"]["hue"]
+        sclera_sat = sclera_color["hsv"]["saturation"]
+        sclera_b = sclera_color["lab"]["b"]
 
-            red_ratio = red / (base_red + 1e-6)
-            sat_ratio = sat / (base_sat + 1e-6)
-
-            if red_ratio < 0.85:
+        # ── HSV Hue: Yellow range 15–40 (camera-normalized) ──────────────────
+        # The more centered in the yellow hue range, the more points
+        if 15 <= sclera_hue <= 40:
+            # Strong center of yellow hue
+            if 20 <= sclera_hue <= 35:
                 score += 4
-            elif red_ratio < 0.95:
+            else:
                 score += 2
 
-            if sat_ratio < 0.75:
-                score += 2
-
-        else:
-            if red < 130:
-                score += 4
-            elif red < 150:
-                score += 2
-
-            if sat < 30:
-                score += 2
-
-        return min(score, 10)
-
-
-    # ==========================================
-    # JAUNDICE (YELLOWNESS)
-    # ==========================================
-    def check_yellowness(self, color_data, baseline_data=None):
-
-        if not color_data:
-            return 0
-
-        score = 0
-        hue = color_data["hsv"]["hue"]
-        lab_b = color_data["lab"]["b"]
-
-        # Yellow hue detection (OpenCV range 0–179)
-        if 15 <= hue <= 40:
-            score += 5
-
-        if baseline_data:
-            base_b = baseline_data["lab"]["b"]
-            b_ratio = lab_b / (base_b + 1e-6)
-
-            if b_ratio > 1.1:
-                score += 3
-        else:
-            if lab_b > 10:
-                score += 3
-
-        return min(score, 10)
-
-
-    # ==========================================
-    # DEHYDRATION (DRYNESS)
-    # ==========================================
-    def check_dryness(self, texture_data):
-
-        if not texture_data:
-            return 0
-
-        score = 0
-
-        if texture_data["edge_density"] > 0.3:
-            score += 5
-        elif texture_data["edge_density"] > 0.2:
-            score += 3
-
-        if texture_data["roughness"] > 40:
-            score += 3
-        elif texture_data["roughness"] > 30:
+        # ── HSV Saturation: Yellow must be saturated, not just pale ──────────
+        # High saturation means vivid yellow, not just off-white
+        if sclera_sat > 60:
             score += 2
-
-        if texture_data["entropy"] > 7.5:
-            score += 2
-
-        return min(score, 10)
-
-
-    # ==========================================
-    # VITAMIN DEFICIENCY
-    # ==========================================
-    def check_vitamin_deficiency(self, color_data, texture_data, baseline_data=None):
-
-        if not color_data or not texture_data:
-            return 0
-
-        score = 0
-
-        red = color_data["rgb"]["red"]
-        sat = color_data["hsv"]["saturation"]
-
-        # --- Color loss component ---
-        if baseline_data:
-            base_red = baseline_data["rgb"]["red"]
-            red_ratio = red / (base_red + 1e-6)
-
-            if red_ratio < 0.85:
-                score += 3
-            elif red_ratio < 0.95:
-                score += 2
-        else:
-            if red < 140:
-                score += 2
-
-        if sat < 40:
-            score += 2
-
-        # --- Texture component ---
-        if texture_data["edge_density"] > 0.25:
-            score += 2
-
-        if texture_data["roughness"] > 35:
+        elif sclera_sat > 30:
             score += 1
 
-        if texture_data["entropy"] > 7.5:
+        # ── LAB B channel: positive B = yellow, graduated by intensity ───────
+        # LAB B neutrals ~ 128; jaundice pushes it toward 150+
+        if sclera_b > 160:      # intense jaundice
+            score += 4
+        elif sclera_b > 150:    # moderate jaundice
+            score += 3
+        elif sclera_b > 142:    # mild jaundice
             score += 2
+        elif sclera_b > 135:    # very mild / borderline
+            score += 1
+
+        return min(score, 10)
+
+    # ==========================================
+    # ANEMIA DETECTION
+    # ==========================================
+    def check_anemia(self, lip_color, under_eye_color, baseline_color=None):
+        """
+        Detects anemia via:
+        - Lip pallor: loss of natural red/pink pigment (primary)
+        - Under-eye darkness: poor oxygenation shows as dark bluish circles (primary)
+        - Compared against the forehead baseline if available
+        """
+
+        score = 0
+
+        # ── Lip Pallor ─────────────────────────────────────────────────────
+        # Anemic lips lose red saturation compared to healthy pink lips
+        print(f"\n[Anemia Debug] baseline_color: {baseline_color is not None}")
+        if lip_color:
+            red = lip_color["rgb"]["red"]
+            sat = lip_color["hsv"]["saturation"]
+            print(f"[Anemia Debug] LIP -> red: {red}, sat: {sat}")
+
+            # Compare to baseline skin tone rednesss if available
+            if baseline_color:
+                base_red = baseline_color["rgb"]["red"]
+                red_deficit = base_red - red  # positive = lips paler than skin
+                print(f"[Anemia Debug] LIP -> base_red: {base_red}, red_deficit: {red_deficit}")
+                # Smartphones bump saturation. A normal lip is red_deficit ~ -20 
+                # If lips are close to skin color (deficit > -5), they are very pale.
+                if red_deficit > 5:
+                    score += 3
+                elif red_deficit > -3:
+                    score += 2
+            else:
+                # Absolute check
+                if red < 140:
+                    score += 2
+
+            # Low saturation = washed out / pale lips
+            if sat < 40:
+                score += 2
+
+        # ── Under-Eye Darkness ─────────────────────────────────────────────
+        # Dark circles = poor oxygenation; thin skin lets dark blood vessels show
+        if under_eye_color and baseline_color:
+            # Under-eye lightness vs baseline skin lightness
+            eye_l = under_eye_color["lab"]["l"]
+            base_l = baseline_color["lab"]["l"]
+            darkness = base_l - eye_l  # positive = under-eye darker than forehead
+            print(f"[Anemia Debug] EYE -> base_l: {base_l}, eye_l: {eye_l}, darkness: {darkness}")
+
+            # Phone cameras auto-brighten shadows. Normal non-dark circles show darkness ~ -5
+            # If darkness is near 0 or positive, the eyes are unusually dark.
+            if darkness > 4:
+                score += 3
+            elif darkness > 1:
+                score += 2
+            elif darkness > -1:
+                score += 1
+
+            # Bluish hue under eyes (deoxygenated blood tint)
+            eye_a = under_eye_color["lab"]["a"]
+            print(f"[Anemia Debug] EYE -> eye_a (low is blue/green, high is red): {eye_a}")
+            if eye_a < 120:  # low a* = less red/more green-blue
+                score += 1
+
+        elif under_eye_color:
+            # No baseline — absolute darkness heuristic
+            if under_eye_color["lab"]["l"] < 100:
+                score += 2
 
         return min(score, 10)
